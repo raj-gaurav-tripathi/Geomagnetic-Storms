@@ -1,0 +1,580 @@
+\documentclass[12pt]{article}
+
+% Packages
+\usepackage[a4paper, margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage{wrapfig}
+\usepackage{tikz}
+\usepackage{soul}
+\usepackage{float}
+
+\usepackage{setspace}
+\usepackage{eso-pic}
+
+% Title formatting
+\begin{document}
+
+% Remove page number
+
+
+\AddToShipoutPictureBG*{
+\AtPageCenter{
+\begin{tikzpicture}[remember picture, overlay]
+\node[opacity=0.3] at (current page.center)
+{\includegraphics[width=2.2\paperwidth]{Sun (1).png}};
+\end{tikzpicture}
+}
+}
+% Background design (subtle shapes)
+\begin{tikzpicture}[remember picture, overlay]
+    % light background
+    % Subtle Sun/Star in the background
+% Opaque Sun in the background
+\shade[inner color=yellow, outer color=orange, opacity=0.5] (12,18) circle (4cm);
+\fill[orange, opacity=0.3] (12,18) circle (5.5cm);
+\draw[blue, line width=2pt] (0,25) -- (15,25);
+    % curved shapes
+    \draw[blue!15, line width=1pt] 
+    (0,24) .. controls (5,23) and (10,25) .. (15,24);
+    
+    \draw[blue!10, line width=1pt] 
+    (0,22) .. controls (6,21) and (12,23) .. (15,22);
+    
+    % bottom circle
+    \fill[blue!10, opacity=0.3] (3,4) circle (3cm);
+    \fill[blue!15, opacity=0.3] (3.5,3.5) circle (2cm);
+    
+    % small dots
+    \fill[blue!20, opacity=0.3] (13,3) circle (0.6cm);
+    \fill[blue!15, opacity=0.3] (14.2,2.2) circle (0.3cm);
+\end{tikzpicture}
+
+\vspace*{4cm}
+
+% Title
+\begin{center}
+    {\Huge \bfseries \color{blue!60!black} Analyzing Geomagnetic Storms}
+    
+    \vspace{1cm}
+    
+    {\Large \color{blue!70!black}
+    Evaluating the Impact of Solar Wind Shockwaves on Earth’s Magnetosphere}
+    
+    \vspace{2cm}
+    
+    {\large
+    Group : T05 \\
+    }
+    
+    \vspace{1cm}
+    
+    {\Large
+    Course: Space Astronomy (SS4202)\vspace{1cm} \\Instructor: \\Prof. Rajesh Kumble Nayak
+\\ Prof. Dibyendu Nandi \\ \vspace{1cm} Student:\\ Kondapalli Vara Prasad (22MS161)\\Eklavya Kukrety (22MS034)\\Raj Gaurav Tripathi (22MS215)\\ \vspace{1cm} May 2025
+    }
+\end{center}
+\newpage
+
+
+
+
+
+
+\begin{titlepage}
+    \vspace*{\fill} % Pushes the content down
+    
+    \begin{center}
+        \Large \textbf{Abstract} % Optional heading for the abstract
+    \end{center}
+    
+    \vspace{0.5cm} 
+
+
+    This project investigates the physical relationship between solar wind conditions and geomagnetic storm response using OMNI spacecraft data for the March 2015 St. Patrick’s Day event. The analysis focused on key upstream parameters such as solar wind speed, proton density, IMF $B_z$, and the geomagnetic $Dst$ index. After removing invalid measurements and interpolating missing values, cross-correlation was used to estimate the propagation delay between the solar wind and Earth's magnetic response, yielding a lag of approximately 85 minutes. A power spectral density study of IMF $B_z$ showed an approximate Kolmogorov-type $-5/3$ turbulent spectrum, indicating a turbulent energy cascade in the solar wind. The storm-time evolution of $Dst$ was further modeled using the Burton equation, which produced a reasonable fit with $R^2 = 0.7149$. A heatmap-based probability analysis was used to identify high-risk geomagnetic conditions associated with strongly southward $B_z$ and elevated dynamic pressure. Overall, the study shows that solar wind structure, energy transfer, and ring current dynamics together govern geomagnetic storm development. Finally, a machine learning model was trained with 20 years of data to predict the Dst index based on solar wind parameters especially the $E_y$, $P_{dyn}$ and $B_z$ and achieved high predictive accuracy, confirming the importance of both immediate kinetic shocks and longer-term energy reservoirs in driving storm intensity.The model showed promising results in forecasting the Dst index with high $R^2$ values close to 0.8 across multiple test periods and also the feature importance analysis confirmed that long-term averages of the solar wind electric field ($E_y$) are the dominant drivers of storm intensity, followed by dynamic pressure ($P_{\mathrm{dyn}}$) and the magnetic field component ($B_z$).
+
+    
+    \vspace*{\fill} % Pushes the content up, balancing the top space
+\end{titlepage}
+
+\newpage
+
+
+% Table of contents
+\tableofcontents
+\newpage
+
+% -----------------------------
+\section{Introduction}
+Space weather phenomena, primarily driven by the continuous emission of solar plasma known as the solar wind, pose significant risks to modern technological infrastructure. When the Sun releases violent eruptions of plasma and magnetic fields, such as Coronal Mass Ejections (CMEs), these shockwaves travel across the solar system and interact with the Earth's magnetosphere. Severe geomagnetic storms can disrupt satellite communications, endanger astronauts, and induce geomagnetically induced currents (GICs) capable of destroying terrestrial electrical grids.
+
+The primary objective of this project is to analyze this solar wind and its cause and effect relationship with Dst index (Earth's magnetic field response). By utilizing high resolution telemetric data from satellites positioned at the L1 Lagrange point, this study aims to track the propagation of a historical CME shockwave (especially  the St. Patrick's Day Storm of March 2015). We also anlayze what type of conditions actually trigger the geomagnetic storm. We will mathematically derive the kinetic and electromagnetic forces of the plasma, calculate its travel time or buffer time to show impact on earth's magnetic field by drop in Dst index using signal processing techniques and ultimately develop a machine learning regression model capable of forecasting the Earth's magnetic response, quantified by the Disturbance Storm Time ($Dst$) index.
+
+\section{Theoretical Framework}
+
+To understand how a solar storm impacts the Earth, we must first understand the fundamental relationship between the Sun, the vacuum of space, and our planet's magnetic field.
+
+\subsection{The Solar Wind and Earth's Shield}
+Unlike the wind on Earth, which is made of neutral gas, the wind in space is made of \textbf{plasma}—a superheated, electrified gas where electrons have been stripped away from their atoms. The Sun continuously boils and shoots this radioactive plasma out into the solar system in all directions. This is known as the \textbf{Solar Wind}. 
+
+Fortunately, the Earth is essentially a giant bar magnet. It generates an invisible magnetic bubble called the \textbf{Magnetosphere}. Under normal conditions, when the solar wind hits this bubble, it bounces off and flows safely around the planet, much like water flowing around a rock in a stream. 
+
+\subsection{Speed, Density, and Pressure}
+Space weather becomes dangerous during a \textbf{Coronal Mass Ejection (CME)}. This occurs when the Sun violently erupts, sending a dense, high-speed shockwave of plasma directly toward Earth. To measure the physical brute force of this shockwave, satellites track two primary variables:
+\begin{itemize}
+    \item \textbf{Solar Wind Speed ($V_{sw}$):} Measured in kilometers per second (km/s). A normal breeze in space is around 400 km/s. A CME shockwave can exceed 800 km/s.
+    \item \textbf{Proton Density ($N_p$):} Measured in particles per cubic centimeter. This tells us how "thick" or "heavy" the plasma cloud is.
+\end{itemize}
+
+However, speed and density alone do not tell the whole story. The true destructive force is their combined kinetic energy, known as \textbf{Dynamic Pressure ($P_{dyn}$)}. This is the physical "ram pressure" that physically squishes and compresses Earth's magnetic shield. It is calculated as:
+\begin{equation}
+P_{dyn} = 1.67 \times 10^{-6} \times N_p \times V_{sw}^2 \quad \text{(nPa)}
+\end{equation}
+
+\subsection{Magnetic Reconnection ($B_z$)}
+No matter how much pressure the solar wind applies, it cannot penetrate the shield \textit{unless the magnetic alignment is correct}. 
+
+The solar wind carries its own magnetic field, known as the Interplanetary Magnetic Field (IMF). The most critical component of this field is its vertical orientation, denoted as $\mathbf{B_z}$.
+\begin{itemize}
+    \item \textbf{Northward $B_z$ (Positive):} Earth's magnetic field points North at the equator. If the solar wind's magnetic field also points North, the two fields repel each other. The shield remains closed, and the Earth is safe.
+    \item \textbf{Southward $B_z$ (Negative):} If the solar wind's magnetic field points South ($B_z < 0$), opposite poles attract. The solar wind's magnetic field violently connects with Earth's magnetic field in a process called \textbf{Magnetic Reconnection}\cite{ref1}. 
+\end{itemize}
+Magnetic Reconnection literally tears open the front of Earth's magnetosphere, creating a direct pathway for radioactive plasma to pour into the Earth's atmosphere.
+
+\subsection{Energy Transfer}
+Because Earth's magnetic shield only opens when $B_z$ is negative, space physicists describe the Earth as a ``Half-Wave Rectifier"—an electrical component that only allows current to flow in one direction. 
+
+When the shield opens, the rushing solar wind acts like a massive electrical generator, pumping raw Megawatts of electrical energy into the Earth's upper atmosphere. This Solar Wind Electric Field ($\mathbf{E_y}$) is the true driver of the geomagnetic storm\cite{ref1}. It is mathematically defined by isolating the Southward-pointing magnetic field ($B_s$) and multiplying it by the speed of the wind:
+\begin{equation}
+B_s = 
+\begin{cases} 
+      |B_z| & \text{if } B_z < 0 \\
+      0 & \text{if } B_z \geq 0 
+\end{cases}
+\end{equation}
+\begin{equation}
+E_y = V_{sw} \times B_s \quad \text{(mV/m)}
+\end{equation}
+
+
+\subsection{Consequence: The Ring Current and the $Dst$ Index}
+When this massive electrical energy ($E_y$) enters the Earth, it gets trapped in the magnetic field lines and is forced to orbit the planet's equator. This creates a massive, doughnut-shaped ring of electricity floating in space, known as the \textbf{Ring Current}.
+
+According to the laws of electromagnetism (Ampere's Law), an electrical current creates its own magnetic field. The Ring Current generates a magnetic field that pushes \textit{against} the Earth's natural magnetic field, effectively weakening it. 
+
+To measure how badly Earth's magnetic field is failing, scientists use the \textbf{Disturbance Storm Time ($Dst$) Index}. 
+\begin{itemize}
+    \item \textbf{Quiet Days:} The Ring Current is weak, and the $Dst$ index sits comfortably near $0 \text{ nT}$.
+    \item \textbf{Severe Storms:} The Ring Current becomes supercharged by the solar wind. The $Dst$ index crashes into deep negative numbers (e.g., $-150 \text{ nT}$ to $-300 \text{ nT}$).
+\end{itemize}
+
+By statistically modeling the relationship between the solar wind's Electric Field ($E_y$), Dynamic Pressure ($P_{dyn}$) and the rate at which the $Dst$ index drops, this project aims to predict the exact severity of space weather events before they fully impact the planet giving us a crucial buffer time to prepare for the storm's consequences.
+\section{Methodology: Data and Analytical Tools}
+
+\subsection{Data Acquisition}
+The primary dataset was sourced from the NASA OMNIWeb database (via the Space Physics Data Facility).\cite{omni} To capture the rapid fluctuations of the solar storm, data was extracted at a high-resolution 5-minute cadence spanning a 30-day window surrounding the event. The telemetric variables extracted included Year, Day, Hour, Minute, $V_{sw}$ (km/s), $N_p$ (n/cc), IMF $B_z$ (nT), and the $Dst$ index (nT).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{output.png}
+    \caption{Raw Data: It shows the original OMNI dataset before cleaning. The large vertical spikes in the solar wind speed, density, and IMF $B_z$ panels are not physical variations but invalid data flags inserted by the instrument pipeline. These extreme values would distort any statistical analysis if left untreated. The sharp decrease in the $Dst$ index around 17 March 2015, however, represents a genuine geomagnetic storm signature and is consistent with a strong disturbance in the magnetosphere.}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsection{Data Pre-processing and Quality Control}
+Satellite sensors operating at the L1 Lagrange point are highly susceptible to radiation blinding during severe CMEs, resulting in missing or corrupt data flags (recorded by NASA as 999.9 or 9999.99). To ensure mathematical integrity:
+
+\begin{itemize}
+    \item \textbf{Outlier Removal:} Non-physical extreme values in solar wind speed, density, and IMF $B_z$ were identified and removed.
+\vspace{0.5cm}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{image.png}
+    \caption{Data After removing Outliers}
+    \label{fig:placeholder}
+\end{figure}
+
+\vspace{0.5cm}
+
+    \item \textbf{Anomaly Purging:} All instrumental error flags were programmatically identified and converted to NaN (Not a Number) to prevent artificial skewing of statistical means.
+    \item \textbf{Linear Interpolation:} Because time-domain signal processing (such as cross-correlation) requires a continuous dataset, missing gaps were filled using linear interpolation.
+    \item \textbf{Temporal Indexing:} Time variables were concatenated into a unified \texttt{Datetime} index, allowing for seamless chronological mapping of the event.
+\end{itemize}
+
+
+
+
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{image1.png}
+    \caption{Interpolated Data: It shows the same data after linear interpolation was applied to fill missing gaps. The overall structure of the storm remains unchanged, but the time series is now continuous, which is essential for cross-correlation and machine learning analysis.}
+    \label{fig:placeholder}
+\end{figure}
+
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{2.png}
+    \caption{
+These histograms show the overall distribution of values for each parameter during the month. We can see that dynamic pressure is peaking around 1 nPa and IMF $B_z$ is mostly around  $-5$ to $+5$ nT and Dst inded around -15 nT to 0 nT. These distributions give us an idea that the most of times the solar wind conditions were relatively calm, with occasonally we see that the dynamic pressure, IMF $B_z$ and Dst index show extreme values corresponding to the storm event.}
+    \label{fig:placeholder}
+\end{figure}
+
+
+
+\subsection{Analytical Pipeline and Tools}
+
+The analysis was carried out in Python using standard scientific libraries for data handling, signal processing, and visualization. We first used \texttt{pandas} and \texttt{NumPy} to clean the OMNI data, remove invalid values, interpolate missing points, and create derived physical quantities such as the dynamic pressure $P_{\mathrm{dyn}}$ and the solar wind electric field $E_y$.
+
+To study the storm timing, we used \texttt{SciPy} cross-correlation to estimate the time lag between the upstream solar wind measurements and the geomagnetic response at Earth. The storm window was then isolated and shifted accordingly to align the cause-and-effect sequence. We also used numerical integration and curve fitting to study the Burton model and the energy balance during the storm.
+
+For prediction and interpretation, we used \texttt{scikit-learn} and related tools to fit the geomagnetic response and evaluate storm probability under different solar wind conditions. All results were visualized with \texttt{Matplotlib} and \texttt{Seaborn}, which were used to generate the time-series plots, histograms, correlation figures, and heatmaps shown in the report.
+For the machine learning part we have used XGBRegressor model from xgboost library to train our data and predict the Dst index of the earth with the actual Dst index for a given data set. We have also obtained the feature importance for the parameters that we have used for training our model.
+
+\vspace{0.5cm}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{3.png}
+    \caption{
+These plots show the actual timeline of the storm. The first panel shows when the shockwave from the CME hit Earth (spike in dynamic pressure). The second panel shows how the IMF Bz turned strongly southward, allowing energy to flow into Earth's magnetosphere\cite{ref1}. The third panel shows how Earth's magnetic field responded, with a sharp drop in the geomagnetic index ($-220 nT$) indicating a strong storm. By looking at these together, we can see the cause-and-effect sequence of the storm's development.}
+    \label{fig:placeholder}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{4.png}
+    \caption{Slicing data to focus exclusively on the storm window}
+    \label{fig:placeholder}
+\end{figure}
+
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{6.png}
+    \caption{
+The first panel confirms that our perfect shift has aligned the cause (Bz) and effect (geomagnetic index) in time. The second panel shows how the electric field (Ey) evolves over time, indicating when energy is being injected into Earth's magnetosphere. The third panel shows how quickly Earth's magnetic field is collapsing or recovering at each moment, allowing us to see the direct impact of the solar wind's energy on the storm's intensity throughout its lifecycle.}
+    \label{fig:placeholder}
+\end{figure}
+
+
+
+
+
+
+
+% -----------------------------
+\newpage
+ \section{Results}
+
+
+
+\subsection{The Storm Event}
+
+
+
+Although $B_z$ fluctuates throughout the interval, the storm intensifies only when it turns strongly southward and remains negative for a sustained period. At that stage, the solar wind couples efficiently with Earth’s magnetosphere, the dynamic pressure builds up, and the geomagnetic index responds with a sharp storm-time drop. This shows that the geomagnetic disturbance is not driven by small variations in $B_z$ alone, but by the combination of strong southward $B_z$ and enhanced solar-wind forcing.
+
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{4.png}
+    \caption{Slicing data to focus exclusively on the storm window}
+    \label{fig:placeholder}
+\end{figure}
+\newpage
+ 
+\subsection{Time taken by Storm to hit Earth Surface}
+Cross-correlation was used to measure the time delay between the upstream IMF $B_z$ signal and the geomagnetic response at Earth. By shifting one time series relative to the other and computing the correlation at each lag, we identify the lag that gives the strongest alignment. The maximum correlation at a negative lag indicates that the solar wind disturbance reaches Earth before the geomagnetic index responds, reflecting the finite travel time of the plasma and the system’s delayed magnetic response.
+\vspace{0.5cm}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{5.png}
+    \caption{
+Here we done cross-correlation. The first panel shows how the correlation between Bz and the geomagnetic index changes as we shift Earth's data back in time. The peak correlation at  around 85 minutes means that if we take Earth's response and move it 85 minutes earlier, it matches the satellite's Bz data perfectly. The second panel shows the original, unaligned data where the cause (Bz) and effect (geomagnetic index) are out of sync. The third panel shows the same data after applying the perfect shift, where we can see that the sharp drop in Bz now lines up exactly with the storm's onset in Earth's magnetic field, confirming our calculated plasma travel time.}
+    \label{fig:placeholder}
+\end{figure}
+
+\textbf{Takeaway:} The cross-correlation analysis reveals a propagation delay of approximately \textbf{85 minutes}, confirming the travel time of solar wind disturbances from upstream measurements to their geomagnetic impact at Earth.
+
+
+
+ 
+ \newpage
+
+\subsection{Kolmogorov Turbulence in Solar Wind}
+
+Kolmogorov turbulence describes how energy in a turbulent plasma cascades from large scales to smaller scales without loss in the inertial range, leading to a characteristic power-law spectrum $E(k) \propto k^{-5/3}$\cite{kolmogorov1941}
+
+The power spectral density of IMF $B_z$ reveals how magnetic fluctuations are distributed across frequency scales in the solar wind. A declining spectrum indicates that large-scale variations contain more energy than small-scale fluctuations. The red dashed line represents the expected Kolmogorov $-5/3$ slope, suggesting an inertial-range turbulent cascade where energy is transferred from larger to smaller scales.
+
+
+\vspace{0.5cm}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{7.png}
+    \caption{Power spectral density of IMF $B_z$ as a function of frequency on logarithmic axes. The data is of the same month that we did prior analysis. The observed spectrum shows an approximate inertial-range power-law decay, with the red dashed line indicating the theoretical Kolmogorov slope of $-5/3$ for comparison.}
+    \label{fig:placeholder}
+\end{figure}
+
+\textbf{Takeaway:} The observed $-5/3$ spectral slope confirms the presence of Kolmogorov-type turbulence in the solar wind, indicating a cascade of energy from large-scale magnetic structures to smaller scales.
+
+
+\newpage
+
+
+\subsection{Physical Burton Model}
+The Burton model provides a simple empirical description of the geomagnetic storm-time evolution of the $Dst$ index.\cite{ref1} It relates changes in $Dst$ to solar wind energy input (primarily driven by the interplanetary electric field) and a decay term representing ring current dissipation.
+
+\begin{equation}
+\frac{dDst}{dt} = Q(t) - \frac{Dst}{\tau}
+\end{equation}
+
+where $Q(t)$ represents the energy injection rate (typically related to the solar wind electric field $E_y$), and $\tau$ is the characteristic decay time of the ring current.
+
+ \begin{figure}[H]
+     \centering
+     \includegraphics[width=0.8\linewidth]{8.png}
+     \caption{These plots show how well the Burton equation, with the optimized parameters, can reconstruct the actual geomagnetic index during the storm. The top plot compares the actual Dst values with the model's predictions, while the bottom plot shows the residuals to check for any systematic errors.}
+     \label{fig:placeholder}
+ \end{figure}
+
+
+\textbf{Model Parameters:} The optimized Burton model yielded an injection rate of \textbf{-0.1433}, a decay time of \textbf{120.63 hours}, and a quiet-time baseline of \textbf{-0.1667 nT/hr}. The model achieved an $R^2$ value of \textbf{0.7149}, indicating a good agreement with observed $Dst$ variations.
+
+\textbf{Takeaway:} The Burton model successfully reproduces the storm-time evolution of $Dst$ ($R^2 \approx 0.71$), confirming that geomagnetic dynamics are largely governed by a balance between solar wind energy injection and ring current decay.
+
+
+\newpage
+
+
+
+
+\subsection{Energy Conservation}
+During a geomagnetic storm, energy transferred from the solar wind into Earth’s magnetosphere is approximately conserved, being partitioned between injection into the ring current and subsequent dissipation. This balance between input and loss governs the temporal evolution of the $Dst$ index.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{9.png}
+    \caption{This plot visually demonstrates the principle of energy conservation during the geomagnetic storm. The filled orange area represents the total energy injected into Earth's magnetosphere by the solar wind (via the electric field), while the solid blue line represents the total energy dissipated as Earth's magnetic field responds to the storm. The fact that these two curves closely track each other over time illustrates how the energy from the solar wind is ultimately balanced by Earth's response.}
+    \label{fig:placeholder}
+\end{figure}
+
+\textbf{Takeaway:} The close agreement between injected and dissipated energy confirms that geomagnetic storm evolution is governed by an approximate energy balance between solar wind input and magnetospheric dissipation.
+
+
+\subsection{Probability of Geomagnetic Storm}
+
+The conditions for a severe storm are most likely when Bz is strongly negative (southward) and when the dynamic pressure is high.
+In our model we taken $Dst < -100 nT$ as the threshold for a severe storm, which is a common benchmark in space weather research. This threshold corresponds to a Kp index of 7 or higher, indicating a significant geomagnetic disturbance that can have substantial impacts on satellite operations, power grids, and communication systems on Earth.
+
+We constructed the heatmap by first categorizing the continuous solar wind data of year 2003 into discrete bins based on the z-component of the magnetic field (Bz) and the dynamic pressure (Pdyn). We then calculated the probability of a severe geomagnetic storm occurring within each bin by taking the mean of a boolean column that indicates whether the storm threshold was met. Finally, we visualized this probability matrix using a heatmap, where the color intensity represents the likelihood of a severe storm under different combinations of Bz and Pdyn conditions.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{10.png}
+    \caption{Plot shows the probability of a severe geomagnetic storm occurring based on the conditions of the solar wind's dynamic pressure and the z-component of the interplanetary magnetic field.}
+    \label{fig:placeholder}
+\end{figure}
+
+
+Now we have identified the specific time periods during the St. Patrick's Day storm when the solar wind conditions entered the "Danger Zones" as defined by our heatmap. By filtering the 2015 data based on the high-risk bins, we can see exactly when the storm was under conditions that historically have a greater than 50 chance of leading to severe geomagnetic storms. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{11.png}
+    \caption{This plot provides a visual comparison between the actual geomagnetic index (Dst) during the 2015 St. Patrick's Day storm and the specific time points where our dynamically defined heatmap conditions(from 2003 storm data) predicted a high risk of severe storm activity. The blue line represents the continuous Dst values, while the red dots indicate the hours where the solar wind conditions entered the "Danger Zones" as defined by our heatmap. The dashed black line marks the threshold for a severe storm. By analyzing this plot, we can assess how well our heatmap-based predictions align with the actual storm behavior.}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsection{Machine Learning based prediction}
+
+After thorough cleaning and anlaysis of the Solar wind parameters we now turn to predicting the Earth response to the incoming solar wind way after it gets recorded in the sensors of the satellite and before hitting the earth magnetic shield. Here we have used XGBRegressor model from xgboost library  to train our data. We have taken 20 years of data (January 2000 to December 2020). We then trained our model with this huge 20 years data  with 1hr, 3hr, 12hr, 24hr and 48hr deep memory learning(for each next data point it takes into account of 1hr 3hr ...previous data points) and then predicted the Dst of the earth with the actual Dst for a given data set.
+The training data contains core parameters like $E_y$, $P_{dyn}$, and $B_z$ and the Dst index for that 20 years. Below are some of the plots obtained with machine learning techniques.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\linewidth]{image copy 4.png}
+    \caption{XGBRegressor model  predicting the Dst index of April 2024 month with R$^2 = 0.81$ The plot of prediction accuracy is also shown. }
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\linewidth]{image copy 2.png}
+    \caption{XGBRegressor model  predicting the Dst index of Aug - Sep 2024  with R$^2 = 0.85$ The plot of prediction accuracy is also shown. }
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\linewidth]{image copy 3.png}
+    \caption{XGBRegressor model  predicting the Dst index of Sep - Oct 2025 month with R$^2 = 0.82$ The plot of prediction accuracy is also shown. }
+\end{figure}
+
+\subsubsection*{Top Triggers for Geomagnetic Storms}
+
+The parameters or control varibles that we have used for training our model are $E_y$, $P_{dyn}$, and $B_z$. But internally the model calculates the 1hr 3hr 12hr 24hr 48hr averages of these dynamical variables. After training the model we have also obtained the feature importance for these parameters. The feature importance is a measure of how much each parameter contributes to the model's predictions. 
+
+\begin{wrapfigure}{r}{0.45\textwidth}
+    \centering
+    \includegraphics[width=0.43\textwidth]{trigger.png}
+    \caption{Feature importance plot showing the top parameters that contribute to the model's predictions of the Dst index. The long-term averages of the solar wind electric field ($E_y$) are the most influential, followed by dynamic pressure ($P_{\mathrm{dyn}}$) and the magnetic field component ($B_z$).}
+    \label{fig:placeholder}
+\end{wrapfigure}
+As seen directly from the feature importance graph, the model relies overwhelmingly on the long term averages of the solar wind electric field ($E_y$), which is essentially a product of the solar wind speed ($v$) and the southward magnetic field component ($B_z$). The fact that the 24-hour and 12-hour averages of $E_y$ completely dominate the top of the chart mathematically captures the massive lag in the Earth's response; because of magnetospheric inertia, it takes hours to days for this injected electromagnetic energy to fully saturate the ring current and subsequently decay. Contrasting this slow, delayed buildup, the model then highlights dynamic pressure ($P_{\mathrm{dyn}}$) which is basically the kinetic force calculated from the solar wind density ($n$) and the square of its velocity ($v^2$) by prioritizing its instantaneous and 1-hour averages to catch the immediate, violent kinetic shockwaves compressing the shield. Finally, the 3-hour average of $B_z$ rounds out the top triggers, demonstrating that while short-term magnetic orientation is necessary for initiating magnetic reconnection, the model proves that predicting a storm requires tracking both the rapid $P_{\mathrm{dyn}}$ shocks and the deeply lagged $E_y$  energy reservoir.
+\newpage
+% -----------------------------
+\section{Discussion}
+
+In this study, we investigated the causal chain linking solar wind dynamics to geomagnetic storm activity, using high-resolution OMNI data for the St. Patrick's Day storm of March 2015. By combining data-driven analysis with physically motivated modeling, we were able to reconstruct and interpret the evolution of the geomagnetic disturbance in a self-consistent framework.
+
+A key result of this work is the successful validation of the physical picture underlying geomagnetic storms. The temporal alignment obtained through cross-correlation analysis confirms that variations in the interplanetary magnetic field (particularly the southward component $B_z$) precede and drive the response of the geomagnetic index. The estimated propagation delay of $\sim 85$ minutes is consistent with the expected transit time of the solar wind plasma from the L1 point to Earth, thereby reinforcing the causal interpretation of the observed correlations.
+
+The Burton model provided a quantitatively reasonable reconstruction of the Dst index, achieving an $R^2$ value of approximately 0.71. This indicates that a significant fraction of the geomagnetic variability can be explained by a simple balance between energy injection (parameterized through the solar wind electric field $E_y$) and exponential decay of the ring current. The agreement between injected and dissipated energy further supports the physical consistency of the model and highlights the role of energy conservation in governing storm dynamics.
+
+The probabilistic analysis based on $B_z$ and dynamic pressure ($P_{\mathrm{dyn}}$) reveals clear regions of elevated storm risk. The heatmap demonstrates that strong southward magnetic fields combined with high dynamic pressure significantly increase the likelihood of severe geomagnetic disturbances. The alignment of predicted high-risk intervals with observed drops in the Dst index suggests that even simple threshold-based approaches can provide meaningful predictive insight.
+
+Additionally, the machine learning analysis using the XGBRegressor model shows promising results in forecasting the Dst index based on solar wind parameters. The high $R^2$ values across multiple test periods indicate that the model captures the complex relationships between solar wind conditions and geomagnetic response, while the feature importance analysis confirms that long-term averages of the solar wind electric field ($E_y$) are the dominant drivers of storm intensity. This underscores the importance of tracking both the immediate kinetic shocks (via $P_{\mathrm{dyn}}$) and the longer-term energy reservoir (via $E_y$) for accurate storm prediction.
+\subsection{Limitations of the Present Study}
+
+Despite these encouraging results, several limitations must be acknowledged.
+
+First, the Burton model is inherently a simplified empirical model. It assumes a linear relationship between the driving electric field and the rate of change of Dst, and a single characteristic decay timescale for the ring current. In reality, geomagnetic storms involve multiple coupled processes, including particle injections, wave-particle interactions, and nonlinear feedback mechanisms, which are not captured in this framework.
+
+Second, the preprocessing step relies on linear interpolation to fill missing data gaps. While this ensures continuity for signal processing techniques, it may smooth out sharp physical features and introduce artificial correlations, particularly during periods of intense solar activity when data gaps are most frequent.
+
+Third, the probabilistic heatmap approach uses fixed thresholds and binning strategies, which may lead to loss of information and sensitivity to bin size selection. The assumption of a fixed Dst threshold for defining “severe storms” also simplifies what is, in reality, a continuous spectrum of geomagnetic activity.
+
+Fourth, although cross-correlation provides an estimate of propagation delay, it does not account for possible variations in solar wind speed, shock structure, or magnetospheric response time. A more complete treatment would require dynamic time warping or physics-based propagation models.
+
+Finally, the machine learning model, while powerful, takes into account only a limited set of input parameters and may not capture all relevant physical processes. The model's performance is also contingent on the quality and representativeness of the training data, and it may not generalize well to extreme events that are underrepresented in the dataset. More sophisticated models that incorporate additional features, such as solar wind composition, wave activity, or magnetospheric state variables, could potentially improve predictive accuracy.
+
+\subsection{Future Improvements}
+
+While the present study provides a coherent physical interpretation of geomagnetic storm dynamics, several avenues exist for improving the robustness and depth of the analysis.
+
+A key improvement would be the incorporation of more sophisticated physical models beyond the Burton framework. The current model assumes a linear relationship between the solar wind electric field and the rate of change of the Dst index, along with a single decay timescale. In reality, the magnetospheric response is governed by multiple coupled processes, including nonlinear particle dynamics, time-dependent injection rates, and varying dissipation mechanisms. Incorporating multi-timescale or nonlinear extensions of the Burton model would provide a more accurate representation of storm evolution.
+
+From a data analysis perspective, the treatment of missing data can be further refined. While linear interpolation ensures continuity, it may suppress sharp variations during critical phases of the storm. More advanced gap-filling techniques, such as spline interpolation or stochastic methods, could preserve the intrinsic variability of the signal more effectively.
+
+Additionally, the current timing analysis relies on cross-correlation to estimate the propagation delay between L1 measurements and Earth’s response. Although effective, this approach assumes a constant lag and does not account for variations in solar wind speed or evolving shock structures. Incorporating dynamic propagation models or adaptive time-alignment techniques would improve the accuracy of causal interpretation.
+
+Further insights can also be gained by extending the signal processing analysis. Techniques such as spectral decomposition and autocorrelation can help distinguish between externally driven variations and intrinsic magnetospheric dynamics, providing a deeper understanding of the temporal structure of geomagnetic storms.
+
+Finally, expanding the dataset to include multiple storm events would allow for statistical validation of the observed relationships and improve the generality of the conclusions. A broader dataset would also help identify event-to-event variability and strengthen the reliability of the physical interpretations presented in this study.
+
+\subsection{Summary of Significance}
+
+Overall, this work demonstrates that a combined physics-driven and data-driven approach provides a powerful framework for understanding and modeling geomagnetic storms. While the current study establishes the foundational relationships and validates key physical mechanisms, the integration of machine learning techniques offers a promising pathway toward accurate and operational space weather forecasting.
+
+% -----------------------------
+\section{Conclusion}
+
+In this study, we analyzed the physical mechanisms underlying geomagnetic storms by examining the interaction between solar wind parameters and the Earth's magnetosphere during the St. Patrick’s Day storm of March 2015. Using high-resolution OMNI data, we constructed a complete pipeline beginning from data preprocessing and quality control to physically motivated modeling and interpretation.
+
+Our results clearly demonstrate the causal sequence driving geomagnetic disturbances. The cross-correlation analysis established a well-defined propagation delay between upstream solar wind measurements and the terrestrial response, confirming the temporal relationship between cause and effect. The southward component of the interplanetary magnetic field ($B_z$) was identified as the primary trigger enabling energy transfer into the magnetosphere through magnetic reconnection.
+
+By constructing derived quantities such as dynamic pressure ($P_{\mathrm{dyn}}$) and the solar wind electric field ($E_y$), we quantified both the mechanical and electromagnetic drivers of the storm. The evolution of these parameters showed a clear correspondence with the observed drop in the Dst index, illustrating how solar wind energy is injected into and subsequently dissipated within Earth's magnetospheric system.
+
+The Burton model provided a physically interpretable framework to describe the temporal evolution of the geomagnetic response. Despite its simplicity, the model was able to reproduce the overall trend of the Dst index with reasonable accuracy, capturing the balance between energy injection and ring current decay. The consistency between injected and dissipated energy further supports the validity of the underlying physical assumptions.
+
+The probabilistic analysis based on $B_z$ and dynamic pressure highlighted the conditions under which severe geomagnetic storms are most likely to occur. The alignment between predicted high-risk intervals and observed geomagnetic disturbances demonstrates that even relatively simple parameter-based approaches can provide meaningful predictive insights.
+
+In addition, the machine learning analysis using the XGBRegressor model that we have trained with 20 year of data has shown promising results in forecasting the Dst index based on solar wind parameters. The predicted Dst values closely match the actual Dst index for multiple test periods even during the violent solar storm events. The feature importance analysis confirms that long-term averages of the solar wind electric field ($E_y$) are the dominant drivers of storm intensity, while dynamic pressure ($P_{\mathrm{dyn}}$) and the magnetic field component ($B_z$) also play significant roles in shaping the geomagnetic response. Based on this forecasting model, we can predict the triggers for the geomagnetic storms and can also predict the Dst index of the earth with a good accuracy. This has significant implications for space weather forecasting and the mitigation of storm impacts on technological systems.
+
+Overall, this work establishes a coherent and physically grounded framework for understanding space weather phenomena. By combining data-driven analysis with fundamental physical principles, we have demonstrated how solar activity translates into measurable geomagnetic effects at Earth. These results not only reinforce existing theoretical understanding but also provide a foundation for more advanced predictive modeling and real-time space weather forecasting in future studies.
+
+% -----------------------------
+\section{Data and Software Sources}
+
+\subsection{Data Sources}
+
+The primary dataset used in this study was obtained from the NASA OMNIWeb database, maintained by the Space Physics Data Facility (SPDF). This database provides near-Earth solar wind measurements propagated to the L1 Lagrange point, along with geomagnetic indices.
+
+Three distinct datasets were utilized for different components of the analysis:
+
+\begin{itemize}
+    \item \textbf{March 2015 Storm Data:} High-resolution (5-minute cadence) data covering March 2015 was used to analyze the St. Patrick’s Day geomagnetic storm. This dataset includes solar wind speed ($V_{sw}$), proton density ($N_p$), interplanetary magnetic field component ($B_z$), and the Dst index.
+
+    \item \textbf{Full Year 2003 Data:} A full-year dataset (2003) was used to construct the probabilistic heatmap of geomagnetic storm occurrence. This extended dataset provides a broader statistical basis for identifying high-risk regions in parameter space, particularly in terms of $B_z$ and dynamic pressure ($P_{\mathrm{dyn}}$).
+
+    \item \textbf{Extended Solar Wind Data (20 Years):} A comprehensive dataset spanning multiple years (January 2000 to December 2020) was used to validate the machine learning model and assess its generalizability across different solar wind conditions.
+\end{itemize}
+
+All datasets were preprocessed to remove invalid data flags (e.g., 9999 values), followed by interpolation to ensure continuity for time-series analysis.
+
+\subsection{Software and Libraries}
+
+The analysis was performed using Python, leveraging a range of scientific computing and data analysis libraries:
+
+\begin{itemize}
+    \item \textbf{pandas:} Data ingestion, cleaning, and time-series handling.
+    \item \textbf{NumPy:} Numerical computations and array operations.
+    \item \textbf{SciPy:} Curve fitting and numerical integration (including Simpson’s rule and trapezoidal integration).
+    \item \textbf{Matplotlib:} Generation of all primary plots and visualizations.
+    \item \textbf{Seaborn:} Statistical visualization, particularly for heatmaps and distribution plots.
+    \item \textbf{scikit-learn:} Data preprocessing and model-related utilities.
+    \item \textbf{XGBoost:} Gradient boosting framework used for advanced predictive modeling.
+    \item \textbf{requests and io:} Data retrieval and file handling from online sources.
+    \item \textbf{os:} File system operations and environment management.
+\end{itemize}
+
+All computations and visualizations were carried out in a Python-based environment, ensuring reproducibility and flexibility for further extensions of the analysis.
+
+
+% -----------------------------
+\section{Contribution Statement}
+The individual contributions of the group members to the project are summarized below:
+
+\begin{itemize}
+    \item \textbf{Kondapalli Vara Prasad}: Developed the computational data pre-processing pipeline, including outlier removal and linear interpolation. Conducted the numerical cross-correlation timing analysis and the power spectral density study for Kolmogorov turbulence. Responsible for the generation of statistical distributions (Figure 4), storm timelines (Figures 5 \& 6), and the electromagnetic lifecycle analysis (Figure 7). Implemented the machine learning framework.
+    
+    \item \textbf{Eklavya Kukrety}: Responsible for primary data acquisition and the numerical implementation of the Burton model (Figure 10) and energy conservation laws (Figure 11). Coded the probabilistic heatmap (Figure 12) and danger zone prediction visualizations (Figure 13). Authored the Discussion (Section 5), Conclusion (Section 6) and Data and Software Sources (Section 7).
+    
+    \item \textbf{Raj Gaurav Tripathi}: Managed the overall coordination of the project and logistical organization. Served as the lead technical writer for the manuscript, authoring the Introduction, Theoretical Framework (Section 2), Methodology (Section 3), and the Results (Section 4). Responsible for the structural integrity, professional formatting, and bibliographical consistency of the final report.
+    
+    \item \textbf{Collective Contributions}: All members participated in the initial project planning, the physical interpretation of astrophysical data, and the collaborative final review of the report.
+\end{itemize}
+
+
+
+\section{Acknowledgments}
+We would like to express our sincere gratitude to our professor Dibyendu Nandi and professor Rajesh Kumble Nayak for their invaluable guidance and support throughout this project. We are also thankful to our peers for their constructive feedback and collaborative spirit and thankful for the Space Astronomy instructors to have given us the opportunity to collaborate on this project and explore the fascinating field of space weather and geomagnetic storms. 
+
+
+% -----------------------------
+\begin{thebibliography}{9}
+
+\bibitem{ref1}
+Burton, R. K., R. L.McPherron, and C. T.Russell (1975), An empirical relationship between interplanetary conditions and Dst, J. Geophys. Res., 80(31), 4204–4214, doi:10.1029/JA080i031p04204.
+
+\bibitem{kolmogorov1941}
+A. N. Kolmogorov,
+"The local structure of turbulence in incompressible viscous fluid for very large Reynolds numbers,"
+Dokl. Akad. Nauk SSSR, vol. 30, pp. 301--305, 1941.
+
+\bibitem{omni}
+NASA Space Physics Data Facility (SPDF), 
+"OMNIWeb Data Explorer" 
+
+\bibitem{matthaeus1982}
+W. H. Matthaeus and M. L. Goldstein, 
+"Measurement of the rugged invariants of magnetohydrodynamic turbulence in the solar wind," 
+Journal of Geophysical Research, vol. 87, no. A8, pp. 6011–6028, 1982.
+
+
+\end{thebibliography}
+
+\end{document}
